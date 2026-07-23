@@ -49,11 +49,12 @@ def evaluate_decision(req: EvaluationRequest):
     """
 
     try:
-        # En stabil model referansı
+        # Doğru olan satır:
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash-latest",
+            model_name="gemini-1.5-flash",
             system_instruction=system_instruction
         )
+
         
         response = model.generate_content(user_prompt)
         
