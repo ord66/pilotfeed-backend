@@ -5,7 +5,7 @@ import google.generativeai as genai
 
 app = FastAPI()
 
-# Render Environment Variables altındaki GEMINI_API_KEY okunur
+# Render Environment Variables altından GEMINI_API_KEY okunur
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 if GEMINI_API_KEY:
@@ -27,7 +27,7 @@ def evaluate_decision(req: EvaluationRequest):
     if not GEMINI_API_KEY:
         return {
             "status": "FAIL",
-            "feedback": "HATA: GEMINI_API_KEY Render paneline henüz eklenmemiş veya okunamıyor."
+            "feedback": "HATA: GEMINI_API_KEY Render paneline eklenmemiş veya okunamıyor."
         }
 
     system_instruction = (
@@ -48,24 +48,52 @@ def evaluate_decision(req: EvaluationRequest):
     Lütfen bu hamleyi uçuş emniyeti ve sistem mantığı (Antiskid, N/W Steering, Decel Light) açısından değerlendir.
     """
 
+    # Model isimlerinde öncelikli denenme sırası (Fallback listesi)
+    candidate_models = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash-002",
+        "gemini-1.5-pro"
+    ]
+
+    selected_model_name = None
+
+    # Hesabınızda desteklenen ilk çalışan modeli bulalım
     try:
-        # Doğru olan satır:
+        available_models = [
+            m.name.replace("models/", "") 
+            for m in genai.list_models() 
+            if "generateContent" in m.supported_generation_methods
+        ]
+        
+        for candidate in candidate_models:
+            if candidate in available_models:
+                selected_model_name = candidate
+                break
+        
+        # Eğer listeden eşleşen çıkmazsa desteklenen ilk modeli seç
+        if not selected_model_name and available_models:
+            selected_model_name = available_models[0]
+
+    except Exception:
+        # Liste çekilemezse varsayılan model adı dene
+        selected_model_name = "gemini-2.5-flash"
+
+    try:
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name=selected_model_name,
             system_instruction=system_instruction
         )
-
         
         response = model.generate_content(user_prompt)
         
         if response and hasattr(response, 'text') and response.text:
             analysis = response.text.strip()
         else:
-            analysis = "LLM yanıt üretti fakat boş döndü."
+            analysis = "LLM yanıt üretti ancak boş döndü."
 
     except Exception as e:
-        # Hatayı gizlemek yerine ekrana basıyoruz ki doğrudan müdahale edebilin
-        analysis = f"Gemini API Hatası: {str(e)}"
+        analysis = f"Gemini API Hatası ({selected_model_name}): {str(e)}"
 
     return {
         "status": "SUCCESS" if req.is_correct else "FAIL",
