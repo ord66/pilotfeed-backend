@@ -48,42 +48,10 @@ def evaluate_decision(req: EvaluationRequest):
     Lütfen bu hamleyi uçuş emniyeti ve sistem mantığı (Antiskid, N/W Steering, Decel Light) açısından değerlendir.
     """
 
-    # Tamamen ÜCRETSİZ katmanda çalışan modeller (Öncelik Sırası)
-    candidate_models = [
-        "gemini-1.5-flash-8b",
-        "gemini-1.5-flash-001",
-        "gemini-1.5-flash-002",
-        "gemini-1.5-pro",
-        "gemini-2.5-flash"
-    ]
-
-
-    selected_model_name = None
-
-    # Hesabınızda desteklenen ilk çalışan modeli bulalım
     try:
-        available_models = [
-            m.name.replace("models/", "") 
-            for m in genai.list_models() 
-            if "generateContent" in m.supported_generation_methods
-        ]
-        
-        for candidate in candidate_models:
-            if candidate in available_models:
-                selected_model_name = candidate
-                break
-        
-        # Eğer listeden eşleşen çıkmazsa desteklenen ilk modeli seç
-        if not selected_model_name and available_models:
-            selected_model_name = available_models[0]
-
-    except Exception:
-        # Liste çekilemezse varsayılan model adı dene
-        selected_model_name = "gemini-2.5-flash"
-
-    try:
+        # Doğrudan güncel ve ücretsiz standart model
         model = genai.GenerativeModel(
-            model_name=selected_model_name,
+            model_name="gemini-1.5-flash",
             system_instruction=system_instruction
         )
         
@@ -95,7 +63,7 @@ def evaluate_decision(req: EvaluationRequest):
             analysis = "LLM yanıt üretti ancak boş döndü."
 
     except Exception as e:
-        analysis = f"Gemini API Hatası ({selected_model_name}): {str(e)}"
+        analysis = f"Gemini API Hatası: {str(e)}"
 
     return {
         "status": "SUCCESS" if req.is_correct else "FAIL",
