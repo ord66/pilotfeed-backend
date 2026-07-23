@@ -1,14 +1,13 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 app = FastAPI()
 
+# GEMINI_API_KEY ortam değişkenini otomatik okur
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
 
 class EvaluationRequest(BaseModel):
     aircraft_type: str
@@ -19,7 +18,7 @@ class EvaluationRequest(BaseModel):
 
 @app.get("/")
 def home():
-    return {"status": "Feed The Pilot Engine Active"}
+    return {"status": "Feed The Pilot Gemini Engine Active"}
 
 @app.post("/evaluate")
 def evaluate_decision(req: EvaluationRequest):
@@ -28,6 +27,8 @@ def evaluate_decision(req: EvaluationRequest):
             "status": "FAIL",
             "feedback": "HATA: GEMINI_API_KEY Render paneline eklenmemiş."
         }
+
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
     system_instruction = (
         "Sen tecrübeli bir A320 Check Captain ve NTSB/EASA Kaza İnceleme Uzmanısın. "
@@ -48,35 +49,24 @@ def evaluate_decision(req: EvaluationRequest):
     """
 
     try:
-        # 1. Hesaptaki tüm aktif ve kullanılabilir modelleri al
-        available_models = [
-            m.name for m in genai.list_models() 
-            if 'generateContent' in m.supported_generation_methods
-        ]
-
-        if not available_models:
-            return {
-                "status": "FAIL",
-                "feedback": "API Key geçerli ancak hesabınızda aktif içerik üreten model bulunamadı."
-            }
-
-        # 2. Çalıştığı kesin olan ilk modeli seç
-        target_model = available_models[0]
-
-        # 3. İçeriği üret
-        model = genai.GenerativeModel(
-            model_name=target_model,
-            system_instruction=system_instruction
+        # Yeni SDK resmi çağrı yapısı
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+            ),
         )
-        response = model.generate_content(user_prompt)
+
+        analysis = response.text.strip() if response.text else "Yanıt boş döndü."
 
         return {
             "status": "SUCCESS" if req.is_correct else "FAIL",
-            "feedback": response.text.strip() if response.text else "Yanıt boş döndü."
+            "feedback": analysis
         }
 
     except Exception as e:
         return {
             "status": "FAIL",
-            "feedback": f"Sistem Hatası: {str(e)}"
+            "feedback": f"Gemini API Hatası: {str(e)}"
         }
