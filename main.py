@@ -48,8 +48,7 @@ def evaluate_decision(req: EvaluationRequest):
     Lütfen bu hamleyi uçuş emniyeti ve sistem mantığı (Antiskid, N/W Steering, Decel Light) açısından değerlendir.
     """
 
-        try:
-        # Doğrudan güncel ve aktif v1beta sürüm etiketi
+    try:
         model = genai.GenerativeModel(
             model_name="gemini-1.5-flash-002",
             system_instruction=system_instruction
@@ -64,7 +63,6 @@ def evaluate_decision(req: EvaluationRequest):
 
     except Exception as e:
         analysis = f"Gemini API Hatası: {str(e)}"
-
 
     return {
         "status": "SUCCESS" if req.is_correct else "FAIL",
