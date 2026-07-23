@@ -49,7 +49,7 @@ def evaluate_decision(req: EvaluationRequest):
     try:
         # Yeni SDK resmi syntax yapısı
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-1.5-flash',
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
