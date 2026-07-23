@@ -6,7 +6,7 @@ from google.genai import types
 
 app = FastAPI()
 
-# GEMINI_API_KEY ortam değişkenini otomatik okur
+# Render ortam değişkeninden API anahtarını alır
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 class EvaluationRequest(BaseModel):
@@ -18,16 +18,17 @@ class EvaluationRequest(BaseModel):
 
 @app.get("/")
 def home():
-    return {"status": "Feed The Pilot Gemini Engine Active"}
+    return {"status": "Feed The Pilot Engine Active"}
 
 @app.post("/evaluate")
 def evaluate_decision(req: EvaluationRequest):
     if not GEMINI_API_KEY:
         return {
             "status": "FAIL",
-            "feedback": "HATA: GEMINI_API_KEY Render paneline eklenmemiş."
+            "feedback": "HATA: GEMINI_API_KEY Render paneline eklenmemiş veya okunamıyor."
         }
 
+    # Yeni SDK Client Mimarisi
     client = genai.Client(api_key=GEMINI_API_KEY)
 
     system_instruction = (
@@ -49,7 +50,6 @@ def evaluate_decision(req: EvaluationRequest):
     """
 
     try:
-        # Yeni SDK resmi çağrı yapısı
         response = client.models.generate_content(
             model='gemini-1.5-flash',
             contents=user_prompt,
