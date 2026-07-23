@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import os
-import requests
+from google import genai
+from google.genai import types
 
 app = FastAPI()
 
-# Render üzerindeki GEMINI_API_KEY okunur
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+# GEMINI_API_KEY ortam değişkenini otomatik algılayan yeni resmi Client
+client = genai.Client() if os.getenv("GEMINI_API_KEY") else None
 
 class EvaluationRequest(BaseModel):
     aircraft_type: str
@@ -17,14 +18,14 @@ class EvaluationRequest(BaseModel):
 
 @app.get("/")
 def home():
-    return {"status": "Feed The Pilot API Direct REST Active"}
+    return {"status": "Feed The Pilot Gemini Engine Active"}
 
 @app.post("/evaluate")
 def evaluate_decision(req: EvaluationRequest):
-    if not GEMINI_API_KEY:
+    if not client:
         return {
             "status": "FAIL",
-            "feedback": "HATA: GEMINI_API_KEY Render paneline eklenmemiş."
+            "feedback": "HATA: GEMINI_API_KEY Render paneline eklenmemiş veya okunamıyor."
         }
 
     system_instruction = (
@@ -45,36 +46,20 @@ def evaluate_decision(req: EvaluationRequest):
     Lütfen bu hamleyi uçuş emniyeti ve sistem mantığı (Antiskid, N/W Steering, Decel Light) açısından değerlendir.
     """
 
-    # Doğrudan Google v1 REST API Uç Noktası
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    
-    headers = {
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "system_instruction": {
-            "parts": [{"text": system_instruction}]
-        },
-        "contents": [
-            {
-                "parts": [{"text": user_prompt}]
-            }
-        ]
-    }
-
     try:
-        response = requests.post(url, json=payload, headers=headers, timeout=10)
-        res_data = response.json()
-
-        if response.status_code == 200:
-            analysis = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        else:
-            error_msg = res_data.get("error", {}).get("message", "Bilinmeyen API Hatası")
-            analysis = f"Google API Hatası ({response.status_code}): {error_msg}"
+        # Yeni SDK resmi syntax yapısı
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+            ),
+        )
+        
+        analysis = response.text.strip() if response.text else "LLM yanıt üretti ancak boş döndü."
 
     except Exception as e:
-        analysis = f"Sunucu Bağlantı Hatası: {str(e)}"
+        analysis = f"Gemini API Hatası: {str(e)}"
 
     return {
         "status": "SUCCESS" if req.is_correct else "FAIL",
