@@ -50,7 +50,7 @@ def evaluate_decision(req: EvaluationRequest):
         client = genai.Client(api_key=GEMINI_API_KEY)
         
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model = genai.GenerativeModel("gemini-2.5-flash"),
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
