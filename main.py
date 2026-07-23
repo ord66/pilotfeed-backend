@@ -48,13 +48,15 @@ def evaluate_decision(req: EvaluationRequest):
     Lütfen bu hamleyi uçuş emniyeti ve sistem mantığı (Antiskid, N/W Steering, Decel Light) açısından değerlendir.
     """
 
-    # Model isimlerinde öncelikli denenme sırası (Fallback listesi)
+    # Tamamen ÜCRETSİZ katmanda çalışan modeller (Öncelik Sırası)
     candidate_models = [
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
+        "gemini-1.5-flash-8b",
+        "gemini-1.5-flash-001",
         "gemini-1.5-flash-002",
-        "gemini-1.5-pro"
+        "gemini-1.5-pro",
+        "gemini-2.5-flash"
     ]
+
 
     selected_model_name = None
 
