@@ -6,7 +6,6 @@ from google.genai import types
 
 app = FastAPI()
 
-# Render ortam değişkeninden API anahtarını alır
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 class EvaluationRequest(BaseModel):
@@ -28,9 +27,6 @@ def evaluate_decision(req: EvaluationRequest):
             "feedback": "HATA: GEMINI_API_KEY Render paneline eklenmemiş veya okunamıyor."
         }
 
-    # Yeni SDK Client Mimarisi
-    client = genai.Client(api_key=GEMINI_API_KEY)
-
     system_instruction = (
         "Sen tecrübeli bir A320 Check Captain ve NTSB/EASA Kaza İnceleme Uzmanısın. "
         "Uçuş simülasyonunda pilotun yaptığı acil durum seçimlerini analiz ediyorsun. "
@@ -50,6 +46,9 @@ def evaluate_decision(req: EvaluationRequest):
     """
 
     try:
+        # Yeni SDK Client
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        
         response = client.models.generate_content(
             model='gemini-1.5-flash',
             contents=user_prompt,
@@ -66,7 +65,8 @@ def evaluate_decision(req: EvaluationRequest):
         }
 
     except Exception as e:
+        # Hata ayrıntısını ham olarak dönüyoruz
         return {
             "status": "FAIL",
-            "feedback": f"Gemini API Hatası: {str(e)}"
+            "feedback": f"Gemini API Bağlantı Hatası: {str(e)}"
         }
