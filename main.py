@@ -8,7 +8,7 @@ app = FastAPI()
 
 # Model ismi ve API Key ortam değişkenlerinden dinamik okunur
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash").strip()
 
 class EvaluationRequest(BaseModel):
     aircraft_type: str
